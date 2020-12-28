@@ -4,18 +4,25 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
 
 public class TileEnchantmentStorage extends TileEntity {
 
+    public static final int BOOK_IN_SLOT = 0;
+    public static final int BOOK_OUT_SLOT = 1;
+    public final ItemStackHandler items = new ItemStackHandler(2);
+
     @Override
     public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+        compound.setTag("items", this.items.serializeNBT());
         return super.writeToNBT(compound);
     }
 
     @Override
     public void readFromNBT(NBTTagCompound compound) {
+        this.items.deserializeNBT(compound.getCompoundTag("items"));
         super.readFromNBT(compound);
     }
 
