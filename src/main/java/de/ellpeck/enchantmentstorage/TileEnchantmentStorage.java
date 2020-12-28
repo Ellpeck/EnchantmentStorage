@@ -11,13 +11,17 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.mutable.MutableInt;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +30,23 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
 
     public static final int BOOK_IN_SLOT = 0;
     public static final int BOOK_OUT_SLOT = 1;
-    public final ItemStackHandler items = new ItemStackHandler(2);
+    public final ItemStackHandler items = new ItemStackHandler(2) {
+        @Nonnull
+        @Override
+        public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+            // not sure why this doesn't happen by default but ok
+            if (!this.isItemValid(slot, stack))
+                return stack;
+            return super.insertItem(slot, stack, simulate);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+            if (slot == BOOK_IN_SLOT)
+                return stack.getItem() == Items.ENCHANTED_BOOK;
+            return false;
+        }
+    };
     public final Map<ResourceLocation, MutableInt> storedEnchantments = new HashMap<>();
 
     @Override
@@ -70,7 +90,6 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
             this.storedEnchantments.put(
                     new ResourceLocation(tag.getString("enchantment")),
                     new MutableInt(tag.getInteger("amount")));
-            System.out.println(tag.getString("enchantment"));
         }
         super.readFromNBT(compound);
     }
@@ -94,6 +113,19 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
     @Override
     public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
         this.readFromNBT(pkt.getNbtCompound());
+    }
+
+    @Override
+    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+        return capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY;
+    }
+
+    @Nullable
+    @Override
+    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+        if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
+            return (T) this.items;
+        return null;
     }
 
     public void sendToClients() {
