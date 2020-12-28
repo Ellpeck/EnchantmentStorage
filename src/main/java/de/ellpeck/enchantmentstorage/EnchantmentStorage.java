@@ -1,5 +1,6 @@
 package de.ellpeck.enchantmentstorage;
 
+import de.ellpeck.enchantmentstorage.network.PacketHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
@@ -13,5 +14,6 @@ public class EnchantmentStorage {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         Registry.preInit();
+        PacketHandler.preInit();
     }
 }

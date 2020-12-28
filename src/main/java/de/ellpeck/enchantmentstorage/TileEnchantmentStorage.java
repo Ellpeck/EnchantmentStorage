@@ -1,6 +1,7 @@
 package de.ellpeck.enchantmentstorage;
 
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemEnchantedBook;
@@ -126,6 +127,26 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
             return (T) this.items;
         return null;
+    }
+
+    public void createEnchantedBook(ResourceLocation enchantment, int level) {
+        if (!this.items.getStackInSlot(BOOK_OUT_SLOT).isEmpty())
+            return;
+        MutableInt available = this.storedEnchantments.get(enchantment);
+        if (available == null || available.intValue() <= 0)
+            return;
+        if (level <= 0 || available.intValue() < getLevelOneCount(level))
+            return;
+        ItemStack ret = new ItemStack(Items.ENCHANTED_BOOK);
+        Enchantment ench = Enchantment.getEnchantmentByLocation(enchantment.toString());
+        ItemEnchantedBook.addEnchantment(ret, new EnchantmentData(ench, level));
+        this.items.setStackInSlot(BOOK_OUT_SLOT, ret);
+
+        available.subtract(getLevelOneCount(level));
+        if (available.intValue() <= 0)
+            this.storedEnchantments.remove(enchantment);
+        this.sendToClients();
+        this.markDirty();
     }
 
     public void sendToClients() {
