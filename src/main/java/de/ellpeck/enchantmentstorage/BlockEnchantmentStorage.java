@@ -5,6 +5,7 @@ import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumBlockRenderType;
@@ -26,6 +27,7 @@ public class BlockEnchantmentStorage extends BlockContainer {
         this.setLightOpacity(0);
         this.setHardness(2);
         this.setHarvestLevel("pickaxe", 1);
+        this.setCreativeTab(CreativeTabs.DECORATIONS);
         this.setRegistryName("enchantment_storage");
         this.setUnlocalizedName(this.getRegistryName().toString());
         GameRegistry.registerTileEntity(TileEnchantmentStorage.class, this.getRegistryName());
