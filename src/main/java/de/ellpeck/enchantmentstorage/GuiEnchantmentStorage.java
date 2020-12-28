@@ -47,7 +47,7 @@ public class GuiEnchantmentStorage extends GuiContainer {
         this.levelPlusButton.enabled = false;
         this.levelMinusButton = this.addButton(new PlusMinusButton(-2, this.guiLeft + 144, this.guiTop + 35, 10, 15, "", 0, 218));
         this.levelMinusButton.enabled = false;
-        this.okayButton = this.addButton(new GuiButtonExt(-3, this.guiLeft + 144, this.guiTop + 55, 30, 15, I18n.format("gui.done")));
+        this.okayButton = this.addButton(new GuiButtonExt(-3, this.guiLeft + 141, this.guiTop + 55, 36, 15, I18n.format("info." + EnchantmentStorage.ID + ".apply")));
         this.okayButton.enabled = false;
 
         this.lastEnchantmentHash = 0;
