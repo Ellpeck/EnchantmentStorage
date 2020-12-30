@@ -21,6 +21,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Map;
 
 public class GuiEnchantmentStorage extends GuiContainer {
@@ -149,8 +150,10 @@ public class GuiEnchantmentStorage extends GuiContainer {
         this.lastEnchantmentHash = enchantments.hashCode();
         this.scrollOffset = MathHelper.clamp(this.scrollOffset, 0, this.getMaxScrollOffset());
         this.buttonList.removeIf(b -> b instanceof EnchantmentButton);
-        for (Map.Entry<ResourceLocation, MutableInt> ench : enchantments.entrySet())
-            this.addButton(new EnchantmentButton(this.buttonList.size(), 0, 0, ench.getKey(), ench.getValue().intValue()));
+        enchantments.entrySet().stream()
+                // sort by display name
+                .sorted(Comparator.comparing(e -> I18n.format(Enchantment.getEnchantmentByLocation(e.getKey().toString()).getName())))
+                .forEach(e -> this.addButton(new EnchantmentButton(this.buttonList.size(), 0, 0, e.getKey(), e.getValue().intValue())));
         this.scrollButtons();
     }
 
