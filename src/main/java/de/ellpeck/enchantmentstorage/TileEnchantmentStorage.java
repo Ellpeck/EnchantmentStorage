@@ -90,8 +90,8 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
             if (this.tank.getFluidAmount() > 0) {
                 float added = Config.xpFluids.getOrDefault(this.tank.getFluid().getFluid().getName(), 0F);
                 if (added > 0) {
-                    this.tank.drainInternal(Integer.MAX_VALUE, true);
-                    this.experience.addExperience(added);
+                    FluidStack drained = this.tank.drainInternal(100, true);
+                    this.experience.addExperience(added * drained.amount);
                     dirty = true;
                 }
             }
