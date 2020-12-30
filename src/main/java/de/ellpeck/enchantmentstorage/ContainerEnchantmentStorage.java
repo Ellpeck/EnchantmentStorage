@@ -19,6 +19,7 @@ public class ContainerEnchantmentStorage extends Container {
 
         this.addSlotToContainer(new SlotItemHandler(tile.items, TileEnchantmentStorage.BOOK_IN_SLOT, 158, 12));
         this.addSlotToContainer(new SlotItemHandler(tile.items, TileEnchantmentStorage.BOOK_OUT_SLOT, 194, 45));
+        this.addSlotToContainer(new SlotItemHandler(tile.items, TileEnchantmentStorage.XP_ITEM_IN_SLOT, 246, 45));
 
         // player inventory
         for (int i = 0; i < 3; ++i) {
@@ -39,6 +40,8 @@ public class ContainerEnchantmentStorage extends Container {
         return transferStackInSlot(this, this::mergeItemStack, playerIn, index, s -> {
             if (s.getItem() == Items.ENCHANTED_BOOK)
                 return Pair.of(TileEnchantmentStorage.BOOK_IN_SLOT, TileEnchantmentStorage.BOOK_IN_SLOT + 1);
+            if (Config.xpItems.containsKey(s.getItem().getRegistryName()))
+                return Pair.of(TileEnchantmentStorage.XP_ITEM_IN_SLOT, TileEnchantmentStorage.XP_ITEM_IN_SLOT + 1);
             return null;
         });
     }

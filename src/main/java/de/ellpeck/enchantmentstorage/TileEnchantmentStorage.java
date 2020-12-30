@@ -3,9 +3,7 @@ package de.ellpeck.enchantmentstorage;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
-import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -38,7 +36,8 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
 
     public static final int BOOK_IN_SLOT = 0;
     public static final int BOOK_OUT_SLOT = 1;
-    public final ItemStackHandler items = new ItemStackHandler(2) {
+    public static final int XP_ITEM_IN_SLOT = 2;
+    public final ItemStackHandler items = new ItemStackHandler(3) {
         @Nonnull
         @Override
         public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
@@ -52,6 +51,8 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
         public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
             if (slot == BOOK_IN_SLOT)
                 return stack.getItem() == Items.ENCHANTED_BOOK;
+            if (slot == XP_ITEM_IN_SLOT)
+                return Config.xpItems.containsKey(stack.getItem().getRegistryName());
             return false;
         }
     };
@@ -95,6 +96,17 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
                 }
             }
 
+            // store xp items
+            ItemStack xp = this.items.getStackInSlot(XP_ITEM_IN_SLOT);
+            if (!xp.isEmpty()) {
+                float added = Config.xpItems.getOrDefault(xp.getItem().getRegistryName(), 0F);
+                if (added > 0) {
+                    xp.shrink(1);
+                    this.experience.addExperience(added);
+                    dirty = true;
+                }
+            }
+
             if (dirty) {
                 this.sendToClients();
                 this.markDirty();
@@ -121,6 +133,9 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
     @Override
     public void readFromNBT(NBTTagCompound compound) {
         this.items.deserializeNBT(compound.getCompoundTag("items"));
+        // TODO backwards compat, remove before release
+        if (this.items.getSlots() < 3)
+            this.items.setSize(3);
         this.tank.readFromNBT(compound.getCompoundTag("tank"));
         this.experience.deserializeNBT(compound.getCompoundTag("xp"));
         this.storedEnchantments.clear();
