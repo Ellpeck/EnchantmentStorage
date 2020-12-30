@@ -72,6 +72,8 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
     @Override
     public void update() {
         if (!this.world.isRemote) {
+            boolean dirty = false;
+
             // store enchantments
             ItemStack book = this.items.getStackInSlot(BOOK_IN_SLOT);
             if (!book.isEmpty() && book.getItem() == Items.ENCHANTED_BOOK) {
@@ -80,8 +82,7 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
                     current.add(getLevelOneCount(ench.getValue()));
                 }
                 book.shrink(1);
-                this.sendToClients();
-                this.markDirty();
+                dirty = true;
             }
 
             // convert tank contents to stored xp
@@ -90,7 +91,13 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
                 if (added > 0) {
                     this.tank.drainInternal(Integer.MAX_VALUE, true);
                     this.experience.addExperience(added);
+                    dirty = true;
                 }
+            }
+
+            if (dirty) {
+                this.sendToClients();
+                this.markDirty();
             }
         }
     }
@@ -179,6 +186,7 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
         available.subtract(getLevelOneCount(level));
         if (available.intValue() <= 0)
             this.storedEnchantments.remove(enchantment);
+
         this.sendToClients();
         this.markDirty();
     }

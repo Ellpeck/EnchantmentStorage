@@ -4,7 +4,9 @@ import de.ellpeck.enchantmentstorage.network.PacketExtractEnchantment;
 import de.ellpeck.enchantmentstorage.network.PacketHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
@@ -94,6 +96,7 @@ public class GuiEnchantmentStorage extends GuiContainer {
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         this.mc.getTextureManager().bindTexture(BACKGROUND);
         drawModalRectWithCustomSizedTexture(this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize, 512, 256);
+        this.renderExpBar(this.guiLeft + 189, this.guiTop + 11);
     }
 
     @Override
@@ -122,6 +125,33 @@ public class GuiEnchantmentStorage extends GuiContainer {
             button.x = this.guiLeft + 5;
             button.y = this.guiTop + y;
             y += 20;
+        }
+    }
+
+    // edited GuiIngame copy
+    private void renderExpBar(int x, int y) {
+        this.mc.getTextureManager().bindTexture(BACKGROUND);
+        int i = this.tile.experience.xpBarCap();
+
+        if (i > 0) {
+            int k = (int) (this.tile.experience.experience * 102);
+            int l = y + 3;
+            drawModalRectWithCustomSizedTexture(x, l, 0, 166, 102, 5, 512, 256);
+
+            if (k > 0) {
+                drawModalRectWithCustomSizedTexture(x, l, 0, 166 + 5, k, 5, 512, 256);
+            }
+        }
+
+        if (this.tile.experience.experienceLevel > 0) {
+            String s = "" + this.tile.experience.experienceLevel;
+            int i1 = x + (102 - this.fontRenderer.getStringWidth(s)) / 2;
+            int j1 = y - 31 - 4 + 32;
+            this.fontRenderer.drawString(s, i1 + 1, j1, 0);
+            this.fontRenderer.drawString(s, i1 - 1, j1, 0);
+            this.fontRenderer.drawString(s, i1, j1 + 1, 0);
+            this.fontRenderer.drawString(s, i1, j1 - 1, 0);
+            this.fontRenderer.drawString(s, i1, j1, 8453920);
         }
     }
 
