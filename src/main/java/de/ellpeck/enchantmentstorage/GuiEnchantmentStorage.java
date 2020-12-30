@@ -18,6 +18,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.io.IOException;
 import java.util.Map;
 
+// TODO scroll the scroll menu
 public class GuiEnchantmentStorage extends GuiContainer {
 
     private static final ResourceLocation BACKGROUND = new ResourceLocation(EnchantmentStorage.ID, "textures/gui/enchantment_storage.png");

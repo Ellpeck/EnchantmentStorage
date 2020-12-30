@@ -3,7 +3,9 @@ package de.ellpeck.enchantmentstorage;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -18,6 +20,11 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidTank;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -48,6 +55,18 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
             return false;
         }
     };
+    public final FluidTank tank = new FluidTank(Fluid.BUCKET_VOLUME) {
+        @Override
+        public boolean canFillFluidType(FluidStack fluid) {
+            return fluid != null && Config.xpFluids.containsKey(fluid.getFluid().getName());
+        }
+
+        @Override
+        public boolean canDrain() {
+            return false;
+        }
+    };
+    public final ExperienceStorage experience = new ExperienceStorage();
     public final Map<ResourceLocation, MutableInt> storedEnchantments = new HashMap<>();
 
     @Override
@@ -64,12 +83,23 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
                 this.sendToClients();
                 this.markDirty();
             }
+
+            // convert tank contents to stored xp
+            if (this.tank.getFluidAmount() > 0) {
+                float added = Config.xpFluids.getOrDefault(this.tank.getFluid().getFluid().getName(), 0F);
+                if (added > 0) {
+                    this.tank.drainInternal(Integer.MAX_VALUE, true);
+                    this.experience.addExperience(added);
+                }
+            }
         }
     }
 
     @Override
     public NBTTagCompound writeToNBT(NBTTagCompound compound) {
         compound.setTag("items", this.items.serializeNBT());
+        compound.setTag("tank", this.tank.writeToNBT(new NBTTagCompound()));
+        compound.setTag("xp", this.experience.serializeNBT());
         NBTTagList list = new NBTTagList();
         for (Map.Entry<ResourceLocation, MutableInt> ench : this.storedEnchantments.entrySet()) {
             NBTTagCompound tag = new NBTTagCompound();
@@ -84,6 +114,8 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
     @Override
     public void readFromNBT(NBTTagCompound compound) {
         this.items.deserializeNBT(compound.getCompoundTag("items"));
+        this.tank.readFromNBT(compound.getCompoundTag("tank"));
+        this.experience.deserializeNBT(compound.getCompoundTag("xp"));
         this.storedEnchantments.clear();
         NBTTagList list = compound.getTagList("enchantments", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < list.tagCount(); i++) {
@@ -118,7 +150,7 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
 
     @Override
     public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
-        return capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY;
+        return capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY || capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY;
     }
 
     @Nullable
@@ -126,6 +158,8 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
     public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
             return (T) this.items;
+        if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY)
+            return (T) this.tank;
         return null;
     }
 
@@ -158,5 +192,61 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
 
     public static int getLevelOneCount(int level) {
         return (int) Math.pow(2, level - 1);
+    }
+
+    // slightly modified copy of EntityPlayer content
+    public static class ExperienceStorage implements INBTSerializable<NBTTagCompound> {
+        // the total level
+        public int experienceLevel;
+        // the total amount of experience, which is the experience for each level and the experience in the bar
+        public int experienceTotal;
+        // the experience in the experience bar
+        public float experience;
+
+        public void addExperienceLevel(int levels) {
+            this.experienceLevel += levels;
+            if (this.experienceLevel < 0) {
+                this.experienceLevel = 0;
+                this.experience = 0.0F;
+                this.experienceTotal = 0;
+            }
+            // edit: don't play the sound
+        }
+
+        public int xpBarCap() {
+            if (this.experienceLevel >= 30) {
+                return 112 + (this.experienceLevel - 30) * 9;
+            } else {
+                return this.experienceLevel >= 15 ? 37 + (this.experienceLevel - 15) * 5 : 7 + this.experienceLevel * 2;
+            }
+        }
+
+        // edit: add a float instead of an int
+        public void addExperience(float amount) {
+            int i = Integer.MAX_VALUE - this.experienceTotal;
+            if (amount > i)
+                amount = i;
+            this.experience += amount / this.xpBarCap();
+            for (this.experienceTotal += amount; this.experience >= 1.0F; this.experience /= this.xpBarCap()) {
+                this.experience = (this.experience - 1.0F) * this.xpBarCap();
+                this.addExperienceLevel(1);
+            }
+        }
+
+        @Override
+        public NBTTagCompound serializeNBT() {
+            NBTTagCompound tag = new NBTTagCompound();
+            tag.setInteger("level", this.experienceLevel);
+            tag.setInteger("total", this.experienceTotal);
+            tag.setFloat("experience", this.experience);
+            return tag;
+        }
+
+        @Override
+        public void deserializeNBT(NBTTagCompound nbt) {
+            this.experienceLevel = nbt.getInteger("level");
+            this.experienceTotal = nbt.getInteger("total");
+            this.experience = nbt.getFloat("experience");
+        }
     }
 }

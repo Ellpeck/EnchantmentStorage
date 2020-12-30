@@ -13,6 +13,7 @@ public class EnchantmentStorage {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        Config.init(event.getSuggestedConfigurationFile());
         Registry.preInit();
         PacketHandler.preInit();
     }
