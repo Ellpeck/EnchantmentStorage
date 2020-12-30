@@ -11,6 +11,7 @@ public final class PacketHandler {
     public static void preInit() {
         network = new SimpleNetworkWrapper(EnchantmentStorage.ID);
         network.registerMessage(PacketExtractEnchantment.Handler.class, PacketExtractEnchantment.class, 0, Side.SERVER);
+        network.registerMessage(PacketExtractExperience.Handler.class, PacketExtractExperience.class, 1, Side.SERVER);
     }
 
     public static void sendToServer(IMessage message) {

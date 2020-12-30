@@ -1,6 +1,7 @@
 package de.ellpeck.enchantmentstorage;
 
 import de.ellpeck.enchantmentstorage.network.PacketExtractEnchantment;
+import de.ellpeck.enchantmentstorage.network.PacketExtractExperience;
 import de.ellpeck.enchantmentstorage.network.PacketHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -32,6 +33,7 @@ public class GuiEnchantmentStorage extends GuiContainer {
     private GuiButton levelPlusButton;
     private GuiButton levelMinusButton;
     private GuiButton okayButton;
+    private GuiButton extractXpButton;
     private Enchantment selectedEnchantment;
     private int selectedEnchantmentAvailable;
     private int level = 1;
@@ -55,6 +57,8 @@ public class GuiEnchantmentStorage extends GuiContainer {
         this.levelMinusButton.enabled = false;
         this.okayButton = this.addButton(new GuiButtonExt(-3, this.guiLeft + 141, this.guiTop + 55, 36, 15, I18n.format("info." + EnchantmentStorage.ID + ".apply")));
         this.okayButton.enabled = false;
+        this.extractXpButton = this.addButton(new GuiButtonExt(-4, this.guiLeft + 251, this.guiTop + 44, 40, 18, I18n.format("info." + EnchantmentStorage.ID + ".extract")));
+        this.extractXpButton.enabled = this.mc.player.experienceLevel > 0;
 
         this.updateEnchantments();
     }
@@ -75,6 +79,9 @@ public class GuiEnchantmentStorage extends GuiContainer {
             this.selectedEnchantment = null;
             this.selectedEnchantmentAvailable = 0;
             this.level = 1;
+        } else if (button == this.extractXpButton) {
+            int amount = isShiftKeyDown() ? Integer.MAX_VALUE : isCtrlKeyDown() ? 10 : 1;
+            PacketHandler.sendToServer(new PacketExtractExperience(this.tile.getPos(), amount));
         }
     }
 
@@ -86,6 +93,7 @@ public class GuiEnchantmentStorage extends GuiContainer {
         this.levelPlusButton.enabled = this.selectedEnchantment != null && this.level < this.selectedEnchantment.getMaxLevel() && this.selectedEnchantmentAvailable >= TileEnchantmentStorage.getLevelOneCount(this.level + 1);
         this.levelMinusButton.enabled = this.selectedEnchantment != null && this.level > 1;
         this.okayButton.enabled = this.selectedEnchantment != null && this.tile.items.getStackInSlot(TileEnchantmentStorage.BOOK_OUT_SLOT).isEmpty();
+        this.extractXpButton.enabled = this.mc.player.experienceLevel > 0;
     }
 
     @Override

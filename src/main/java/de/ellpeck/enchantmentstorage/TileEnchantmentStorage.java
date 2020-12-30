@@ -4,13 +4,16 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.NetworkManager;
+import net.minecraft.network.play.server.SPacketSetExperience;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
+import net.minecraft.scoreboard.IScoreCriteria;
 import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EntitySelectors;
@@ -18,6 +21,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
@@ -221,6 +225,23 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
 
         this.sendToClients();
         this.markDirty();
+    }
+
+    public void extractFromPlayer(EntityPlayerMP player, int amount) {
+        int possibleAmount = Math.min(amount, player.experienceLevel);
+        if (possibleAmount > 0) {
+            // we can't just add levels, because the amount of xp that each level has changes with the level
+            while (possibleAmount > 0) {
+                player.experienceLevel--;
+                // since we just decreased the level, the cap will now be the amount of xp that the previous level represents
+                this.experience.addExperience(player.xpBarCap());
+                possibleAmount--;
+            }
+
+            player.connection.sendPacket(new SPacketSetExperience(player.experience, player.experienceTotal, player.experienceLevel));
+            this.sendToClients();
+            this.markDirty();
+        }
     }
 
     public void sendToClients() {
