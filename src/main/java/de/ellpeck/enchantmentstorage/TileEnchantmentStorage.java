@@ -137,36 +137,15 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
 
     @Override
     public NBTTagCompound writeToNBT(NBTTagCompound compound) {
-        compound.setTag("items", this.items.serializeNBT());
-        compound.setTag("tank", this.tank.writeToNBT(new NBTTagCompound()));
-        compound.setTag("xp", this.experience.serializeNBT());
-        NBTTagList list = new NBTTagList();
-        for (Map.Entry<ResourceLocation, MutableInt> ench : this.storedEnchantments.entrySet()) {
-            NBTTagCompound tag = new NBTTagCompound();
-            tag.setString("enchantment", ench.getKey().toString());
-            tag.setInteger("amount", ench.getValue().intValue());
-            list.appendTag(tag);
-        }
-        compound.setTag("enchantments", list);
+        // persistent nbt is stuff that also goes on the dropped item
+        this.writePersistentNBT(compound);
         return super.writeToNBT(compound);
     }
 
     @Override
     public void readFromNBT(NBTTagCompound compound) {
-        this.items.deserializeNBT(compound.getCompoundTag("items"));
-        // TODO backwards compat, remove before release
-        if (this.items.getSlots() < 3)
-            this.items.setSize(3);
-        this.tank.readFromNBT(compound.getCompoundTag("tank"));
-        this.experience.deserializeNBT(compound.getCompoundTag("xp"));
-        this.storedEnchantments.clear();
-        NBTTagList list = compound.getTagList("enchantments", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < list.tagCount(); i++) {
-            NBTTagCompound tag = list.getCompoundTagAt(i);
-            this.storedEnchantments.put(
-                    new ResourceLocation(tag.getString("enchantment")),
-                    new MutableInt(tag.getInteger("amount")));
-        }
+        // persistent nbt is stuff that also goes on the dropped item
+        this.readPersistentNBT(compound);
         super.readFromNBT(compound);
     }
 
@@ -204,6 +183,36 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
         if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY)
             return (T) this.tank;
         return null;
+    }
+
+    public NBTTagCompound writePersistentNBT(NBTTagCompound compound) {
+        compound.setTag("items", this.items.serializeNBT());
+        compound.setTag("tank", this.tank.writeToNBT(new NBTTagCompound()));
+        compound.setTag("xp", this.experience.serializeNBT());
+        NBTTagList list = new NBTTagList();
+        for (Map.Entry<ResourceLocation, MutableInt> ench : this.storedEnchantments.entrySet()) {
+            NBTTagCompound tag = new NBTTagCompound();
+            tag.setString("enchantment", ench.getKey().toString());
+            tag.setInteger("amount", ench.getValue().intValue());
+            list.appendTag(tag);
+        }
+        // if this is changed, addInformation in the block also needs to be changed!
+        compound.setTag("enchantments", list);
+        return compound;
+    }
+
+    public void readPersistentNBT(NBTTagCompound compound) {
+        this.items.deserializeNBT(compound.getCompoundTag("items"));
+        this.tank.readFromNBT(compound.getCompoundTag("tank"));
+        this.experience.deserializeNBT(compound.getCompoundTag("xp"));
+        this.storedEnchantments.clear();
+        NBTTagList list = compound.getTagList("enchantments", Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < list.tagCount(); i++) {
+            NBTTagCompound tag = list.getCompoundTagAt(i);
+            this.storedEnchantments.put(
+                    new ResourceLocation(tag.getString("enchantment")),
+                    new MutableInt(tag.getInteger("amount")));
+        }
     }
 
     public void createEnchantedBook(ResourceLocation enchantment, int level) {
@@ -277,7 +286,7 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
                 break;
         }
         // multiply the modifier by the amount of books we have to use for the level
-        return modifier *  getLevelOneCount(level);
+        return modifier * getLevelOneCount(level);
     }
 
     // slightly modified copy of EntityPlayer content

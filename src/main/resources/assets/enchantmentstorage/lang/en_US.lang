@@ -2,3 +2,4 @@ tile.enchantmentstorage:enchantment_storage.name=Enchantment Storage
 info.enchantmentstorage.enchantments=Enchantments
 info.enchantmentstorage.apply=Apply
 info.enchantmentstorage.extract=Add XP
+info.enchantmentstorage.stackContent=%s Enchantments Stored
