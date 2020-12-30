@@ -19,7 +19,7 @@ public class ContainerEnchantmentStorage extends Container {
 
         this.addSlotToContainer(new SlotItemHandler(tile.items, TileEnchantmentStorage.BOOK_IN_SLOT, 158, 12));
         this.addSlotToContainer(new SlotItemHandler(tile.items, TileEnchantmentStorage.BOOK_OUT_SLOT, 194, 45));
-        this.addSlotToContainer(new SlotItemHandler(tile.items, TileEnchantmentStorage.XP_ITEM_IN_SLOT, 246, 45));
+        this.addSlotToContainer(new SlotItemHandler(tile.items, TileEnchantmentStorage.XP_ITEM_IN_SLOT, 248, 45));
 
         // player inventory
         for (int i = 0; i < 3; ++i) {
