@@ -14,16 +14,18 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
 import java.util.Map;
 
-// TODO scroll the scroll menu
 public class GuiEnchantmentStorage extends GuiContainer {
 
     private static final ResourceLocation BACKGROUND = new ResourceLocation(EnchantmentStorage.ID, "textures/gui/enchantment_storage.png");
+    private static final int ENCHANTMENT_AMOUNT = 7;
     private final TileEnchantmentStorage tile;
     private final InventoryPlayer playerInventory;
     private int lastEnchantmentHash;
@@ -33,6 +35,7 @@ public class GuiEnchantmentStorage extends GuiContainer {
     private Enchantment selectedEnchantment;
     private int selectedEnchantmentAvailable;
     private int level = 1;
+    private int scrollOffset;
 
     public GuiEnchantmentStorage(EntityPlayer player, TileEnchantmentStorage tile) {
         super(new ContainerEnchantmentStorage(player, tile));
@@ -53,8 +56,7 @@ public class GuiEnchantmentStorage extends GuiContainer {
         this.okayButton = this.addButton(new GuiButtonExt(-3, this.guiLeft + 141, this.guiTop + 55, 36, 15, I18n.format("info." + EnchantmentStorage.ID + ".apply")));
         this.okayButton.enabled = false;
 
-        this.lastEnchantmentHash = 0;
-        this.updateEnchantmentsIfDirty();
+        this.updateEnchantments();
     }
 
     @Override
@@ -79,7 +81,8 @@ public class GuiEnchantmentStorage extends GuiContainer {
     @Override
     public void updateScreen() {
         super.updateScreen();
-        this.updateEnchantmentsIfDirty();
+        if (this.tile.storedEnchantments.hashCode() != this.lastEnchantmentHash)
+            this.updateEnchantments();
         this.levelPlusButton.enabled = this.selectedEnchantment != null && this.level < this.selectedEnchantment.getMaxLevel() && this.selectedEnchantmentAvailable >= TileEnchantmentStorage.getLevelOneCount(this.level + 1);
         this.levelMinusButton.enabled = this.selectedEnchantment != null && this.level > 1;
         this.okayButton.enabled = this.selectedEnchantment != null && this.tile.items.getStackInSlot(TileEnchantmentStorage.BOOK_OUT_SLOT).isEmpty();
@@ -96,6 +99,15 @@ public class GuiEnchantmentStorage extends GuiContainer {
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         this.mc.getTextureManager().bindTexture(BACKGROUND);
         drawModalRectWithCustomSizedTexture(this.guiLeft, this.guiTop, 0, 0, this.xSize, this.ySize, 512, 256);
+
+        // draw the scroll bar
+        if (this.getMaxScrollOffset() <= 0) {
+            drawModalRectWithCustomSizedTexture(this.guiLeft + 126, this.guiTop + 18, 6, 176, 6, 27, 512, 256);
+        } else {
+            int yOffset = (int) ((140 - 27) * (this.scrollOffset / (float) this.getMaxScrollOffset()));
+            drawModalRectWithCustomSizedTexture(this.guiLeft + 126, this.guiTop + 18 + yOffset, 0, 176, 6, 27, 512, 256);
+        }
+
         this.renderExpBar(this.guiLeft + 189, this.guiTop + 11);
     }
 
@@ -106,11 +118,24 @@ public class GuiEnchantmentStorage extends GuiContainer {
         this.fontRenderer.drawString(String.valueOf(this.level), 156, 39, 4210752);
     }
 
-    private void updateEnchantmentsIfDirty() {
+    @Override
+    public void handleMouseInput() throws IOException {
+        super.handleMouseInput();
+        // scroll using the mouse wheel
+        int scroll = (int) Math.signum(Mouse.getEventDWheel());
+        if (scroll != 0) {
+            int newOffset = MathHelper.clamp(this.scrollOffset - scroll, 0, this.getMaxScrollOffset());
+            if (newOffset != this.scrollOffset) {
+                this.scrollOffset = newOffset;
+                this.updateEnchantments();
+            }
+        }
+    }
+
+    private void updateEnchantments() {
         Map<ResourceLocation, MutableInt> enchantments = this.tile.storedEnchantments;
-        if (enchantments.hashCode() == this.lastEnchantmentHash)
-            return;
         this.lastEnchantmentHash = enchantments.hashCode();
+        this.scrollOffset = MathHelper.clamp(this.scrollOffset, 0, this.getMaxScrollOffset());
         this.buttonList.removeIf(b -> b instanceof EnchantmentButton);
         for (Map.Entry<ResourceLocation, MutableInt> ench : enchantments.entrySet())
             this.addButton(new EnchantmentButton(this.buttonList.size(), 0, 0, ench.getKey(), ench.getValue().intValue()));
@@ -119,13 +144,22 @@ public class GuiEnchantmentStorage extends GuiContainer {
 
     private void scrollButtons() {
         int y = 18;
+        int buttons = 0;
         for (GuiButton button : this.buttonList) {
             if (!(button instanceof EnchantmentButton))
                 continue;
-            button.x = this.guiLeft + 5;
-            button.y = this.guiTop + y;
-            y += 20;
+            button.visible = buttons >= this.scrollOffset && buttons < this.scrollOffset + ENCHANTMENT_AMOUNT;
+            buttons++;
+            if (button.visible) {
+                button.x = this.guiLeft + 5;
+                button.y = this.guiTop + y;
+                y += 20;
+            }
         }
+    }
+
+    private int getMaxScrollOffset() {
+        return Math.max(0, this.tile.storedEnchantments.size() - ENCHANTMENT_AMOUNT);
     }
 
     // edited GuiIngame copy
