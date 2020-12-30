@@ -1,0 +1,22 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "BSB",
+        "STS",
+        "BSB"
+    ],
+    "key": {
+        "B": {
+            "item": "minecraft:experience_bottle"
+        },
+        "S": {
+            "item": "minecraft:bookshelf"
+        },
+        "T": {
+            "item": "minecraft:enchanting_table"
+        }
+    },
+    "result": {
+        "item": "enchantmentstorage:enchantment_storage"
+    }
+}
