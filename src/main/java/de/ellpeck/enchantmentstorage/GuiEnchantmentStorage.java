@@ -92,7 +92,7 @@ public class GuiEnchantmentStorage extends GuiContainer {
             this.updateEnchantments();
         this.levelPlusButton.enabled = this.selectedEnchantment != null && this.level < this.selectedEnchantment.getMaxLevel() && this.selectedEnchantmentAvailable >= TileEnchantmentStorage.getLevelOneCount(this.level + 1);
         this.levelMinusButton.enabled = this.selectedEnchantment != null && this.level > 1;
-        this.okayButton.enabled = this.selectedEnchantment != null && this.tile.items.getStackInSlot(TileEnchantmentStorage.BOOK_OUT_SLOT).isEmpty();
+        this.okayButton.enabled = this.selectedEnchantment != null && this.tile.items.getStackInSlot(TileEnchantmentStorage.BOOK_OUT_SLOT).isEmpty() && this.tile.experience.experienceLevel >= TileEnchantmentStorage.getCombinationCost(this.selectedEnchantment, this.level);
         this.extractXpButton.enabled = this.mc.player.experienceLevel > 0;
     }
 
@@ -124,6 +124,10 @@ public class GuiEnchantmentStorage extends GuiContainer {
         this.fontRenderer.drawString(I18n.format("info." + EnchantmentStorage.ID + ".enchantments"), 5, 8, 4210752);
         this.fontRenderer.drawString(this.playerInventory.getDisplayName().getUnformattedText(), 140, 74, 4210752);
         this.fontRenderer.drawString(String.valueOf(this.level), 156, 39, 4210752);
+        if (this.selectedEnchantment != null) {
+            int cost = TileEnchantmentStorage.getCombinationCost(this.selectedEnchantment, this.level);
+            this.fontRenderer.drawString(String.valueOf(cost), 206, 24, cost > this.tile.experience.experienceLevel ? 0xAA0000 : 4210752);
+        }
     }
 
     @Override

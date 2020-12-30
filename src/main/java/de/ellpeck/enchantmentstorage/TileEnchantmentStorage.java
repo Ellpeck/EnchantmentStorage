@@ -214,14 +214,18 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
             return;
         if (level <= 0 || available.intValue() < getLevelOneCount(level))
             return;
-        ItemStack ret = new ItemStack(Items.ENCHANTED_BOOK);
         Enchantment ench = Enchantment.getEnchantmentByLocation(enchantment.toString());
+        int cost = getCombinationCost(ench, level);
+        if (this.experience.experienceLevel < cost)
+            return;
+        ItemStack ret = new ItemStack(Items.ENCHANTED_BOOK);
         ItemEnchantedBook.addEnchantment(ret, new EnchantmentData(ench, level));
         this.items.setStackInSlot(BOOK_OUT_SLOT, ret);
 
         available.subtract(getLevelOneCount(level));
         if (available.intValue() <= 0)
             this.storedEnchantments.remove(enchantment);
+        this.experience.addExperienceLevel(-cost);
 
         this.sendToClients();
         this.markDirty();
@@ -253,6 +257,27 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
 
     public static int getLevelOneCount(int level) {
         return (int) Math.pow(2, level - 1);
+    }
+
+    public static int getCombinationCost(Enchantment enchantment, int level) {
+        // modifier for cost based on enchantment rarity
+        int modifier;
+        switch (enchantment.getRarity()) {
+            case UNCOMMON:
+                modifier = 2;
+                break;
+            case RARE:
+                modifier = 4;
+                break;
+            case VERY_RARE:
+                modifier = 8;
+                break;
+            default: // COMMON
+                modifier = 1;
+                break;
+        }
+        // multiply the modifier by the amount of books we have to use for the level
+        return modifier *  getLevelOneCount(level);
     }
 
     // slightly modified copy of EntityPlayer content
