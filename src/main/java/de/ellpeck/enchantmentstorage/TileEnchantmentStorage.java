@@ -3,6 +3,7 @@ package de.ellpeck.enchantmentstorage;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
@@ -12,9 +13,11 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.server.management.PlayerChunkMapEntry;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
@@ -104,6 +107,20 @@ public class TileEnchantmentStorage extends TileEntity implements ITickable {
                     xp.shrink(1);
                     this.experience.addExperience(added);
                     dirty = true;
+                }
+            }
+
+            // twerking
+            if (Config.twerkXp > 0) {
+                AxisAlignedBB area = new AxisAlignedBB(this.pos).grow(3);
+                for (EntityPlayer player : this.world.getEntitiesWithinAABB(EntityPlayer.class, area, EntitySelectors.NOT_SPECTATING)) {
+                    NBTTagCompound data = player.getEntityData();
+                    // did the player just start sneaking?
+                    if (!data.getBoolean(EnchantmentStorage.ID + ":sneaking") && player.isSneaking()) {
+                        this.experience.addExperience(Config.twerkXp);
+                        dirty = true;
+                    }
+                    data.setBoolean(EnchantmentStorage.ID + ":sneaking", player.isSneaking());
                 }
             }
 
